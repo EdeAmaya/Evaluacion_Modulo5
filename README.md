@@ -9,9 +9,8 @@ Una aplicación móvil desarrollada en React Native con Expo para la gestión de
 
 ## 🎥 Video Demostrativo
 
-[Enlace del video demostrativo]([https://drive.google.com/file/d/XXXXXXXXXXXXXXXXX/view?usp=sharing](https://www.awesomescreenshot.com/video/43754692?key=aa30f806a5acbd033d5890f5bac79aad))
-
-> **Nota:** El video debe ser público y accesible sin solicitar permisos. Asegúrate de configurar los permisos de visualización como "Cualquier persona con el enlace".
+[Enlace del video demostrativo]:
+https://www.awesomescreenshot.com/video/43754692?key=aa30f806a5acbd033d5890f5bac79aad
 
 ## 🚀 Características Principales
 
@@ -192,5 +191,6 @@ service cloud.firestore {
 
 
 ---
+
 
 
