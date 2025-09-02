@@ -9,7 +9,7 @@ Una aplicación móvil desarrollada en React Native con Expo para la gestión de
 
 ## 🎥 Video Demostrativo
 
-[Enlace del video demostrativo](https://drive.google.com/file/d/XXXXXXXXXXXXXXXXX/view?usp=sharing)
+[Enlace del video demostrativo]([https://drive.google.com/file/d/XXXXXXXXXXXXXXXXX/view?usp=sharing](https://www.awesomescreenshot.com/video/43754692?key=aa30f806a5acbd033d5890f5bac79aad))
 
 > **Nota:** El video debe ser público y accesible sin solicitar permisos. Asegúrate de configurar los permisos de visualización como "Cualquier persona con el enlace".
 
@@ -92,19 +92,7 @@ Una aplicación móvil desarrollada en React Native con Expo para la gestión de
    yarn install
    ```
 
-3. **Configurar variables de entorno:**
-   - Crear archivo `.env` en la raíz del proyecto
-   - Agregar las credenciales de Firebase:
-   ```env
-   EXPO_PUBLIC_FIREBASE_API_KEY=tu_api_key
-   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_auth_domain
-   EXPO_PUBLIC_FIREBASE_PROJECT_ID=tu_project_id
-   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_storage_bucket
-   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_messaging_sender_id
-   EXPO_PUBLIC_FIREBASE_APP_ID=tu_app_id
-   ```
-
-4. **Ejecutar la aplicación:**
+3. **Ejecutar la aplicación:**
    ```bash
    npx expo start
    ```
@@ -204,4 +192,5 @@ service cloud.firestore {
 
 
 ---
+
 
