@@ -2,14 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Configuración directa (temporal para testing)
+// Configuración usando variables de entorno
 const firebaseConfig = {
-  apiKey: "AIzaSyBZs6_Rx2dGMyDttY11dBHvKyHwDQPKDhc",
-  authDomain: "trabajodeclase-c369d.firebaseapp.com",
-  projectId: "trabajodeclase-c369d",
-  storageBucket: "trabajodeclase-c369d.firebasestorage.app",
-  messagingSenderId: "187110573941",
-  appId: "1:187110573941:web:22c8804201446a7319b53c"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

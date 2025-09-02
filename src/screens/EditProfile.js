@@ -18,7 +18,7 @@ import { auth, database } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 
 const EditProfile = ({ navigation, route }) => {
-  const { user } = useAuth();
+  const { user, refreshUserInfo } = useAuth();
   const [formData, setFormData] = useState({
     nombre: '',
     edad: '',
@@ -128,15 +128,17 @@ const EditProfile = ({ navigation, route }) => {
       // Actualizar datos en Firestore
       const userDocRef = doc(database, 'usuarios', user.uid);
       await updateDoc(userDocRef, {
-        nombre: nombre,
+        nombre: nombre.trim(),
         edad: edad ? parseInt(edad) : null,
-        especialidad: especialidad,
+        especialidad: especialidad.trim(),
         fechaActualizacion: new Date(),
       });
 
       Alert.alert('Éxito', 'Perfil actualizado correctamente');
+      
+      // Refrescar la información del usuario en el contexto
+      await refreshUserInfo();
     } catch (error) {
-      console.error('Error al actualizar perfil:', error);
       Alert.alert('Error', 'No se pudo actualizar el perfil');
     } finally {
       setLoading(false);
@@ -168,8 +170,6 @@ const EditProfile = ({ navigation, route }) => {
       setShowPasswordSection(false);
 
     } catch (error) {
-      console.error('Error al actualizar contraseña:', error);
-      
       let errorMessage = 'No se pudo actualizar la contraseña';
       switch (error.code) {
         case 'auth/wrong-password':
@@ -195,13 +195,20 @@ const EditProfile = ({ navigation, route }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {formData.nombre ? formData.nombre.charAt(0).toUpperCase() : '👤'}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.title}>Editar Perfil</Text>
           <Text style={styles.subtitle}>Actualiza tu información personal</Text>
         </View>
 
         {/* Sección de información personal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información Personal</Text>
+          <Text style={styles.sectionTitle}>📝 Información Personal</Text>
           
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Nombre Completo</Text>
@@ -256,7 +263,7 @@ const EditProfile = ({ navigation, route }) => {
             onPress={() => setShowPasswordSection(!showPasswordSection)}
           >
             <Text style={styles.sectionTitle}>
-              Cambiar Contraseña {showPasswordSection ? '▼' : '▶'}
+              🔒 Cambiar Contraseña {showPasswordSection ? '▼' : '▶'}
             </Text>
           </TouchableOpacity>
 
@@ -315,19 +322,12 @@ const EditProfile = ({ navigation, route }) => {
 
         {/* Información del usuario (solo lectura) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Información de Cuenta</Text>
+          <Text style={styles.sectionTitle}>ℹ️ Información de Cuenta</Text>
           <View style={styles.readOnlyContainer}>
             <Text style={styles.readOnlyLabel}>Correo Electrónico:</Text>
             <Text style={styles.readOnlyValue}>{user?.email}</Text>
           </View>
         </View>
-
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>Volver al Inicio</Text>
-        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -336,83 +336,118 @@ const EditProfile = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 32,
     marginTop: 20,
+  },
+  avatarContainer: {
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#0288d1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#6c757d',
     textAlign: 'center',
   },
   section: {
-    marginBottom: 30,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
+    marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    color: '#1a1a1a',
+    marginBottom: 16,
   },
   passwordToggle: {
-    marginBottom: 15,
+    marginBottom: 16,
   },
   inputContainer: {
     marginBottom: 16,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#343a40',
     marginBottom: 8,
   },
   input: {
-    height: 50,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
+    height: 56,
+    borderColor: '#e9ecef',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
+    color: '#495057',
   },
   readOnlyContainer: {
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e9ecef',
   },
   readOnlyLabel: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    color: '#6c757d',
+    marginBottom: 4,
+    fontWeight: '500',
   },
   readOnlyValue: {
     fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    color: '#1a1a1a',
+    fontWeight: '600',
   },
   button: {
     backgroundColor: '#0288d1',
-    height: 50,
-    borderRadius: 8,
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   passwordButton: {
     backgroundColor: '#ff9800',
@@ -421,19 +456,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  backButton: {
-    backgroundColor: '#666',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  backButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

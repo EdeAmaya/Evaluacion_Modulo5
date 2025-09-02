@@ -20,42 +20,67 @@ const Login = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
-      return;
+  const validateForm = () => {
+    if (!email.trim()) {
+      Alert.alert('Campo requerido', 'Por favor ingresa tu correo electrónico');
+      return false;
     }
+
+    if (!password.trim()) {
+      Alert.alert('Campo requerido', 'Por favor ingresa tu contraseña');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Email inválido', 'Por favor ingresa un email válido');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log('Usuario logueado exitosamente');
+      await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password.trim());
       // La navegación será manejada automáticamente por el AuthContext
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
+      let errorMessage = 'El correo electrónico o la contraseña son incorrectos';
+      let errorTitle = 'Credenciales incorrectas';
       
-      let errorMessage = 'Error al iniciar sesión';
       switch (error.code) {
         case 'auth/user-not-found':
-          errorMessage = 'Usuario no encontrado';
-          break;
         case 'auth/wrong-password':
-          errorMessage = 'Contraseña incorrecta';
-          break;
+        case 'auth/invalid-credential':
         case 'auth/invalid-email':
-          errorMessage = 'Email inválido';
+          errorMessage = 'El correo electrónico o la contraseña son incorrectos. Verifica tus datos e intenta nuevamente.';
+          errorTitle = 'Credenciales incorrectas';
           break;
         case 'auth/user-disabled':
-          errorMessage = 'Usuario deshabilitado';
+          errorMessage = 'Esta cuenta ha sido deshabilitada. Contacta al administrador.';
+          errorTitle = 'Cuenta deshabilitada';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde';
+          errorMessage = 'Demasiados intentos fallidos. Tu cuenta ha sido temporalmente bloqueada. Intenta más tarde.';
+          errorTitle = 'Cuenta bloqueada temporalmente';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+          errorTitle = 'Sin conexión';
+          break;
+        case 'auth/internal-error':
+          errorMessage = 'Error interno del servidor. Intenta más tarde.';
+          errorTitle = 'Error del servidor';
           break;
         default:
-          errorMessage = 'Error de conexión. Verifica tu internet';
+          errorMessage = 'El correo electrónico o la contraseña son incorrectos. Verifica tus datos e intenta nuevamente.';
+          errorTitle = 'Error al iniciar sesión';
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,8 +97,13 @@ const Login = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Iniciar Sesión</Text>
-          <Text style={styles.subtitle}>Ingresa tus credenciales para acceder</Text>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>👤</Text>
+            </View>
+          </View>
+          <Text style={styles.title}>Bienvenido</Text>
+          <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
         </View>
 
         <View style={styles.form}>
@@ -81,12 +111,13 @@ const Login = ({ navigation }) => {
             <Text style={styles.label}>Correo Electrónico</Text>
             <TextInput
               style={styles.input}
-              placeholder="ejemplo@correo.com"
+              placeholder="Ingresa tu email"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              editable={!loading}
             />
           </View>
 
@@ -99,6 +130,7 @@ const Login = ({ navigation }) => {
               onChangeText={setPassword}
               secureTextEntry={true}
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
@@ -108,18 +140,28 @@ const Login = ({ navigation }) => {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.loadingText}>Iniciando sesión...</Text>
+              </View>
             ) : (
               <Text style={styles.buttonText}>Iniciar Sesión</Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>¿No tienes cuenta? </Text>
-            <TouchableOpacity onPress={goToRegister}>
-              <Text style={styles.registerLink}>Regístrate aquí</Text>
-            </TouchableOpacity>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>o</Text>
+            <View style={styles.dividerLine} />
           </View>
+
+          <TouchableOpacity 
+            style={styles.registerButton} 
+            onPress={goToRegister}
+            disabled={loading}
+          >
+            <Text style={styles.registerButtonText}>Crear nueva cuenta</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -129,79 +171,138 @@ const Login = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f9fa',
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: 'center',
     marginBottom: 40,
   },
+  logoContainer: {
+    marginBottom: 20,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#0288d1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 36,
+    color: '#fff',
+  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#6c757d',
     textAlign: 'center',
   },
   form: {
     width: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inputContainer: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '600',
+    color: '#343a40',
     marginBottom: 8,
   },
   input: {
-    height: 50,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
+    height: 56,
+    borderColor: '#e9ecef',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f8f9fa',
+    color: '#495057',
   },
   button: {
     backgroundColor: '#0288d1',
-    height: 50,
-    borderRadius: 8,
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 8,
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
+    shadowOpacity: 0.1,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  registerContainer: {
+  loadingContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e9ecef',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  registerButton: {
+    backgroundColor: '#fff',
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    borderWidth: 1.5,
+    borderColor: '#0288d1',
   },
-  registerText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  registerLink: {
-    fontSize: 16,
+  registerButtonText: {
     color: '#0288d1',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

@@ -5,66 +5,40 @@ import {
   Text, 
   TouchableOpacity, 
   StyleSheet, 
-  FlatList, 
-  Alert,
-  ScrollView 
+  Alert
 } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { auth, database } from '../config/firebase';
+import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import CardProductos from '../components/CardProductos';
 
 const Home = ({ navigation }) => {
-  const { user } = useAuth();
-  const [productos, setProductos] = useState([]);
-  const [userInfo, setUserInfo] = useState(null);
+  const { user, userInfo, refreshUserInfo } = useAuth();
   const [loading, setLoading] = useState(true);
 
-  // Cargar información del usuario desde Firestore
+  // Cargar información del usuario cuando el componente se monta
   useEffect(() => {
-    const loadUserInfo = async () => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(database, 'usuarios', user.uid));
-          if (userDoc.exists()) {
-            setUserInfo(userDoc.data());
-          } else {
-            // Si no existe el documento en Firestore, usar datos de Auth
-            setUserInfo({
-              nombre: user.displayName || user.email,
-              email: user.email,
-            });
-          }
-        } catch (error) {
-          console.error('Error al cargar información del usuario:', error);
-          setUserInfo({
-            nombre: user.displayName || user.email,
-            email: user.email,
-          });
-        }
+    const loadData = async () => {
+      if (userInfo) {
+        setLoading(false);
+      } else if (user) {
+        await refreshUserInfo();
+        setLoading(false);
       }
-      setLoading(false);
     };
-
-    loadUserInfo();
-  }, [user]);
-
-  // Cargar productos (manteniendo la funcionalidad original)
-  useEffect(() => {
-    const q = query(collection(database, 'productos'), orderBy('creado', 'desc'));
     
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const docs = [];
-      querySnapshot.forEach((doc) => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      setProductos(docs);
+    loadData();
+  }, [user, userInfo, refreshUserInfo]);
+
+  // Escuchar cuando regresa de EditProfile para refrescar datos
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (user) {
+        refreshUserInfo();
+      }
     });
 
-    return () => unsubscribe();
-  }, []);
+    return unsubscribe;
+  }, [navigation, user, refreshUserInfo]);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -80,9 +54,7 @@ const Home = ({ navigation }) => {
           onPress: async () => {
             try {
               await signOut(auth);
-              console.log('Usuario deslogueado');
             } catch (error) {
-              console.error('Error al cerrar sesión:', error);
               Alert.alert('Error', 'No se pudo cerrar la sesión');
             }
           },
@@ -91,23 +63,9 @@ const Home = ({ navigation }) => {
     );
   };
 
-  const goToAdd = () => { 
-    navigation.navigate('Add');
-  };
-
   const goToEditProfile = () => {
     navigation.navigate('EditProfile', { userInfo });
   };
-
-  const renderItem = ({ item }) => (
-    <CardProductos
-      id={item.id}
-      nombre={item.nombre}
-      precio={item.precio}
-      vendido={item.vendido}
-      imagen={item.imagen}
-    />
-  );
 
   if (loading) {
     return (
@@ -122,55 +80,73 @@ const Home = ({ navigation }) => {
       {/* Header con información del usuario */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Text style={styles.welcomeText}>¡Hola!</Text>
+          <Text style={styles.welcomeText}>¡Bienvenido!</Text>
           <Text style={styles.userName}>{userInfo?.nombre || 'Usuario'}</Text>
           {userInfo?.especialidad && (
-            <Text style={styles.userSpeciality}>{userInfo.especialidad}</Text>
+            <Text style={styles.userSpecialty}>{userInfo.especialidad}</Text>
+          )}
+          {userInfo?.edad && (
+            <Text style={styles.userAge}>Edad: {userInfo.edad} años</Text>
           )}
         </View>
-        
-        <View style={styles.headerButtons}>
+      </View>
+
+      {/* Contenido principal */}
+      <View style={styles.mainContent}>
+        <View style={styles.welcomeCard}>
+          <Text style={styles.cardTitle}>Panel de Usuario</Text>
+          <Text style={styles.cardDescription}>
+            Gestiona tu perfil y configuración desde aquí
+          </Text>
+        </View>
+
+        {/* Botones principales */}
+        <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.editProfileButton}
+            style={styles.primaryButton}
             onPress={goToEditProfile}
           >
-            <Text style={styles.editProfileText}>Editar Perfil</Text>
+            <Text style={styles.primaryButtonText}>✏️ Editar Perfil</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Text style={styles.logoutText}>Cerrar Sesión</Text>
+            <Text style={styles.logoutButtonText}>🚪 Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Sección de productos */}
-      <View style={styles.productsSection}>
-        <Text style={styles.title}>Productos Disponibles</Text>
-
-        {productos.length !== 0 ? (
-          <FlatList
-            data={productos}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No hay productos disponibles</Text>
-            <Text style={styles.emptySubtext}>Agrega tu primer producto</Text>
+        {/* Información adicional del usuario */}
+        {userInfo && (
+          <View style={styles.userDetailsCard}>
+            <Text style={styles.cardTitle}>Mi Información</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Email:</Text>
+              <Text style={styles.infoValue}>{userInfo.email}</Text>
+            </View>
+            {userInfo.especialidad && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Especialidad:</Text>
+                <Text style={styles.infoValue}>{userInfo.especialidad}</Text>
+              </View>
+            )}
+            {userInfo.edad && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Edad:</Text>
+                <Text style={styles.infoValue}>{userInfo.edad} años</Text>
+              </View>
+            )}
+            {userInfo.fechaRegistro && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Miembro desde:</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(userInfo.fechaRegistro.toDate()).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
           </View>
         )}
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={goToAdd}
-        >
-          <Text style={styles.addButtonText}>+ Agregar Producto</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -179,7 +155,7 @@ const Home = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   centered: {
     justifyContent: 'center',
@@ -187,113 +163,145 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    color: '#6c757d',
   },
   header: {
     backgroundColor: '#0288d1',
     paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   userInfo: {
-    flex: 1,
+    alignItems: 'center',
   },
   welcomeText: {
     fontSize: 16,
-    color: '#ffffff',
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
   },
   userName: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginTop: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  userSpecialty: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  userAge: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  mainContent: {
+    flex: 1,
+    padding: 24,
+    marginTop: -16,
+  },
+  welcomeCard: {
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+  },
+  cardTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginTop: 2,
-  },
-  userSpeciality: {
-    fontSize: 14,
-    color: '#ffffff',
-    opacity: 0.8,
-    marginTop: 2,
-  },
-  headerButtons: {
-    alignItems: 'flex-end',
-  },
-  editProfileButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
+    color: '#1a1a1a',
     marginBottom: 8,
   },
-  editProfileText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  logoutText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  productsSection: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+  cardDescription: {
+    fontSize: 16,
+    color: '#6c757d',
     textAlign: 'center',
+    lineHeight: 24,
   },
-  list: {
-    paddingBottom: 100,
+  buttonContainer: {
+    marginBottom: 24,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  primaryButton: {
+    backgroundColor: '#0288d1',
+    paddingVertical: 20,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    paddingVertical: 60,
+    marginBottom: 16,
+    shadowColor: '#0288d1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  emptyText: {
+  primaryButtonText: {
+    color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ff9800',
-    textAlign: 'center',
-    marginBottom: 8,
   },
-  emptySubtext: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  addButton: {
-    backgroundColor: '#0288d1',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
+  logoutButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: 20,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    marginVertical: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowColor: '#dc3545',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  addButtonText: {
+  logoutButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
+  },
+  userDetailsCard: {
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f4',
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
   },
 });
 

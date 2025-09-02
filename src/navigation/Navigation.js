@@ -4,12 +4,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
-// Importar todas las pantallas
+// Importar las pantallas necesarias
 import SplashScreen from '../screens/SplashScreen';
 import Login from '../screens/Login';
 import Register from '../screens/Register';
 import Home from '../screens/Home';
-import Add from '../screens/Add';
 import EditProfile from '../screens/EditProfile';
 
 const Stack = createNativeStackNavigator();
@@ -30,24 +29,23 @@ const AppStack = () => (
       name="Home" 
       component={Home} 
       options={{ 
-        title: 'Inicio',
+        title: 'Mi Perfil',
         headerShown: false // Quitamos el header porque ya tenemos uno personalizado
       }} 
-    />
-    <Stack.Screen 
-      name="Add" 
-      component={Add} 
-      options={{
-        presentation: 'modal', 
-        title: 'Agregar Producto'
-      }}
     />
     <Stack.Screen 
       name="EditProfile" 
       component={EditProfile} 
       options={{
         title: 'Editar Perfil',
-        headerBackTitle: 'Volver'
+        headerBackTitle: 'Volver',
+        headerStyle: {
+          backgroundColor: '#0288d1',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
       }}
     />
   </Stack.Navigator>

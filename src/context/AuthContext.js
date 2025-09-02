@@ -11,16 +11,17 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
-        console.log('Usuario autenticado:', user.email);
+        loadUserInfo(user);
       } else {
         setUser(null);
-        console.log('Usuario no autenticado');
+        setUserInfo(null);
       }
       setLoading(false);
     });
@@ -28,9 +29,39 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  const loadUserInfo = async (authUser) => {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { database } = await import('../config/firebase');
+      
+      const userDoc = await getDoc(doc(database, 'usuarios', authUser.uid));
+      if (userDoc.exists()) {
+        setUserInfo(userDoc.data());
+      } else {
+        setUserInfo({
+          nombre: authUser.displayName || authUser.email,
+          email: authUser.email,
+        });
+      }
+    } catch (error) {
+      setUserInfo({
+        nombre: authUser.displayName || authUser.email,
+        email: authUser.email,
+      });
+    }
+  };
+
+  const refreshUserInfo = async () => {
+    if (user) {
+      await loadUserInfo(user);
+    }
+  };
+
   const value = {
     user,
+    userInfo,
     loading,
+    refreshUserInfo,
   };
 
   return (
