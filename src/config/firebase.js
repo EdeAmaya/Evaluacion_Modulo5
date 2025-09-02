@@ -1,19 +1,29 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Configuración usando variables de entorno
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
+  apiKey: "AIzaSyCWOZNHJD8t3YMgyEU3HCmqSx0-X94mpmg",
+  authDomain: "evaluacion-5854e.firebaseapp.com",
+  projectId: "evaluacion-5854e",
+  storageBucket: "evaluacion-5854e.firebasestorage.app",
+  messagingSenderId: "969360230761",
+  appId: "1:969360230761:web:76173692b56162fe4f95f8"
 };
 
-const app = initializeApp(firebaseConfig);
+// Verificar si Firebase ya está inicializado
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+  console.log("✅ Firebase inicializado por primera vez");
+} else {
+  app = getApp();
+  console.log("🔄 Firebase ya estaba inicializado, usando instancia existente");
+}
+
 const auth = getAuth(app);
 const database = getFirestore(app);
+
+console.log("✅ Auth y Database configurados correctamente");
 
 export { auth, database };
